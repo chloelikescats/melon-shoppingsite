@@ -59,39 +59,26 @@ def show_melon(melon_id):
 def show_shopping_cart():
     """Display content of shopping cart."""
 
-    # TODO: Display the contents of the shopping cart.
-
-    # The logic here will be something like:
-    #
-    # - get the cart dictionary from the session
-    # - create a list to hold melon objects and a variable to hold the total
-    #   cost of the order
-    # - loop over the cart dictionary, and for each melon id:
-    #    - get the corresponding Melon object
-    #    - compute the total cost for that type of melon
-    #    - add this to the order total
-    #    - add quantity and total cost as attributes on the Melon object
-    #    - add the Melon object to the list created above
-    # - pass the total order cost and the list of Melon objects to the template
-    #
-    # Make sure your function can also handle the case wherein no cart has
-    # been added to the session
-    if session['cart']:
+    if session.get('cart'):
         session_cart = session['cart']
         melon_list = []
         total = 0
-        for melon_id, quantity in session_cart:
-            melon_object = get_by_id(melon_id)
+        for melon_id, quantity in session_cart.items():
+            melon_object = melons.get_by_id(melon_id)
             melon_price = melon_object.price
-            melon_total_price = melon_price * quantity
-            total = total + melon_total_price
+            melon_object.total_cost = melon_price * quantity
             melon_object.quantity = quantity
-            melon_object.total_cost = melon_total_price
+            # melon_object.total_cost = melon_total_price
+            melon_object.str_total_cost = (
+                "${total_cost:.2f}".format(total_cost=melon_object.total_cost))
             melon_list.append(melon_object)
+            total = total + melon_object.total_cost
+
+        total = "${total:.2f}".format(total=total)
     else:
         flash("You have no melons in your cart!")
         return redirect('/melons')
-    return render_template("cart.html")
+    return render_template("cart.html", melon_list=melon_list, total=total)
 
 
 @app.route("/add_to_cart/<melon_id>")
@@ -112,8 +99,9 @@ def add_to_cart(melon_id):
     # - increment the count for that melon id by 1
     # - flash a success message
     # - redirect the user to the cart page
+    # import pdb; pdb.set_trace()
     session['cart'] = session.get('cart', {})
-    session['cart'] = session.get(melon_id, 0) + 1
+    session['cart'][melon_id] = session['cart'].get(melon_id, 0) + 1
     flash('Melon added!')
     return redirect('/cart')
 
